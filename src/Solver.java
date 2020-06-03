@@ -98,7 +98,7 @@ public class Solver {
         if (!isSolvable()) {
             return -1;
         }
-        return boardTree.min().move;
+        return pq.min().move;
     }
 
     // sequence of boards in a shortest solution; null if unsolvable
@@ -114,14 +114,13 @@ public class Solver {
 
         public SolutionBoards() {
             boards = new Board[moves() + 1];
-            MinPQ<Node> treeCopy = new MinPQ<>();
 
-            for (Node boardNode : boardTree) {
-                treeCopy.insert(boardNode);
-            }
+            Node currNode = pq.min();
 
-            for (int move = 0; move <= moves(); move++) {
-                boards[move] = treeCopy.delMin().board;
+            int i = moves();
+            while (currNode != null) {
+                boards[i--] = currNode.board;
+                currNode = currNode.previousNode;
             }
         }
 
@@ -130,15 +129,15 @@ public class Solver {
         }
 
         private class SolutionIterator implements Iterator<Board> {
-            private int iteratedIndex = moves();
+            private int iterationIndex = 0;
 
             public boolean hasNext() {
-                return iteratedIndex >= 0;
+                return iterationIndex <= moves();
             }
 
             public Board next() {
                 if (!hasNext()) throw new NoSuchElementException();
-                return boards[iteratedIndex--];
+                return boards[iterationIndex++];
             }
         }
     }
