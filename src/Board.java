@@ -6,7 +6,7 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 public class Board {
-    private int[][] boardTiles;
+    private final int[][] boardTiles;
     private int[][] cachedTwinTiles;
 
     // create a board from an n-by-n array of tiles,

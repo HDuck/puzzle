@@ -6,10 +6,7 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 public class Solver {
-    private MinPQ<Node> boardTree;
-    private MinPQ<Node> pq;
-    private MinPQ<Node> twinPQ;
-    private boolean isTwinSolved = false;
+    private Board[] solutionBoards;
 
     // find a solution to the initial board (using the A* algorithm)
     public Solver(Board initial) {
@@ -20,23 +17,34 @@ public class Solver {
         Node initialNode = new Node(initial);
         Board twinBoard = initial.twin();
         Node twinNode = new Node(twinBoard);
-        pq = new MinPQ<>();
-        twinPQ = new MinPQ<>();
-        boardTree = new MinPQ<>();
 
-        boardTree.insert(initialNode);
+        MinPQ<Node> pq = new MinPQ<>();
+        MinPQ<Node> twinPQ = new MinPQ<>();
         pq.insert(initialNode);
         twinPQ.insert(twinNode);
 
-        while (!isTwinSolved && !boardTree.min().board.isGoal()) {
-            findSolution(pq);
+        boolean isTwinSolved = false;
+        while (true) {
             if (pq.min().board.isGoal()) {
                 break;
             }
-            findSolution(twinPQ);
+            findSolution(pq);
+
             if (twinPQ.min().board.isGoal()) {
                 isTwinSolved = true;
                 break;
+            }
+            findSolution(twinPQ);
+        }
+
+        if (!isTwinSolved) {
+            int movesMade = pq.min().move;
+            solutionBoards = new Board[movesMade + 1];
+
+            Node currNode = pq.min();
+            while (currNode != null) {
+                solutionBoards[movesMade--] = currNode.board;
+                currNode = currNode.previousNode;
             }
         }
     }
@@ -83,14 +91,13 @@ public class Solver {
             ) {
                 continue;
             }
-            boardTree.insert(neighborNode);
             pq.insert(neighborNode);
         }
     }
 
     // is the initial board solvable? (see below)
     public boolean isSolvable() {
-        return !isTwinSolved;
+        return solutionBoards != null;
     }
 
     // min number of moves to solve initial board; -1 if unsolvable
@@ -98,7 +105,7 @@ public class Solver {
         if (!isSolvable()) {
             return -1;
         }
-        return pq.min().move;
+        return solutionBoards.length - 1;
     }
 
     // sequence of boards in a shortest solution; null if unsolvable
@@ -110,20 +117,6 @@ public class Solver {
     }
 
     private class SolutionBoards implements Iterable<Board> {
-        private Board[] boards;
-
-        public SolutionBoards() {
-            boards = new Board[moves() + 1];
-
-            Node currNode = pq.min();
-
-            int i = moves();
-            while (currNode != null) {
-                boards[i--] = currNode.board;
-                currNode = currNode.previousNode;
-            }
-        }
-
         public Iterator<Board> iterator() {
             return new SolutionIterator();
         }
@@ -137,7 +130,7 @@ public class Solver {
 
             public Board next() {
                 if (!hasNext()) throw new NoSuchElementException();
-                return boards[iterationIndex++];
+                return solutionBoards[iterationIndex++];
             }
         }
     }
