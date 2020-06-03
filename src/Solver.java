@@ -50,6 +50,7 @@ public class Solver {
     }
 
     private static class Node implements Comparable<Node> {
+        public int cachedPriority = -1;
         public Node previousNode = null;
         public Board board;
         public int move = 0;
@@ -78,7 +79,10 @@ public class Solver {
         }
 
         private int calcPriority(Node node) {
-            return node.board.manhattan() + node.move;
+            if (node.cachedPriority == -1) {
+                node.cachedPriority = node.board.manhattan() + node.move;
+            }
+            return node.cachedPriority;
         }
     }
 
