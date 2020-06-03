@@ -7,6 +7,7 @@ import java.util.NoSuchElementException;
 
 public class Board {
     private int[][] boardTiles;
+    private int[][] cachedTwinTiles;
 
     // create a board from an n-by-n array of tiles,
     // where tiles[row][col] = tile at (row, col)
@@ -43,6 +44,8 @@ public class Board {
                 }
 
                 int expectedTile = col + 1 + row * dimension();
+                // row = tile / dimension()
+                // col = tile % dimension() - 1
                 if (tile != expectedTile) {
                     hamming++;
                 }
@@ -60,11 +63,16 @@ public class Board {
                 if (tile == 0) {
                     continue;
                 }
-                int expectedRow = (tile - col - 1) / dimension();
+
+                int round = tile / dimension();
+                int offset = tile % dimension();
+                int expectedRow = offset == 0 ? round - 1 : round;
+                int expectedCol = offset == 0 ? dimension() - 1 : offset - 1;
+
                 if (expectedRow != row) {
                     manhattan += Math.abs(expectedRow - row);
                 }
-                int expectedCol = tile - 1 - row * dimension();
+
                 if (expectedCol != col) {
                     manhattan += Math.abs(expectedCol - col);
                 }
@@ -100,13 +108,13 @@ public class Board {
             int[] emptyTileCoords = getEmptyTileCoords();
             int row = emptyTileCoords[0];
             int col = emptyTileCoords[1];
-            if (row + 2 != dimension()) {
+            if (row + 1 != dimension()) {
                 neighbors[neighborsCount++] = createBottomNeighbor(row, col);
             }
             if (row != 0) {
                 neighbors[neighborsCount++] = createTopNeighbor(row, col);
             }
-            if (col + 2 != dimension()) {
+            if (col + 1 != dimension()) {
                 neighbors[neighborsCount++] = createRightNeighbor(row, col);
             }
             if (col != 0) {
@@ -200,26 +208,28 @@ public class Board {
 
     // a board that is obtained by exchanging any pair of tiles
     public Board twin() {
-        int[] tileExceptions = new int[2];
-        tileExceptions[0] = 0;
+        if (cachedTwinTiles == null) {
+            int[] tileExceptions = new int[2];
+            tileExceptions[0] = 0;
 
-        int[] firstTileCoords = getRandomizedTileCoords(tileExceptions);
-        int firstTileRow = firstTileCoords[0];
-        int firstTileCol = firstTileCoords[1];
-        int firstTile = boardTiles[firstTileRow][firstTileCol];
+            int[] firstTileCoords = getRandomizedTileCoords(tileExceptions);
+            int firstTileRow = firstTileCoords[0];
+            int firstTileCol = firstTileCoords[1];
+            int firstTile = boardTiles[firstTileRow][firstTileCol];
 
-        tileExceptions[1] = firstTile;
+            tileExceptions[1] = firstTile;
 
-        int[] secondTileCoords = getRandomizedTileCoords(tileExceptions);
-        int secondTileRow = secondTileCoords[0];
-        int secondTileCol = secondTileCoords[1];
-        int secondTile = boardTiles[secondTileRow][secondTileCol];
+            int[] secondTileCoords = getRandomizedTileCoords(tileExceptions);
+            int secondTileRow = secondTileCoords[0];
+            int secondTileCol = secondTileCoords[1];
+            int secondTile = boardTiles[secondTileRow][secondTileCol];
 
-        int[][] twin = copy(boardTiles);
-        twin[firstTileRow][firstTileCol] = secondTile;
-        twin[secondTileRow][secondTileCol] = firstTile;
+            cachedTwinTiles = copy(boardTiles);
+            cachedTwinTiles[firstTileRow][firstTileCol] = secondTile;
+            cachedTwinTiles[secondTileRow][secondTileCol] = firstTile;
+        }
 
-        return new Board(twin);
+        return new Board(cachedTwinTiles);
     }
 
     private int[] getRandomizedTileCoords(int[] tileExceptions) {
@@ -259,7 +269,8 @@ public class Board {
 
         StdOut.println(board);
         StdOut.println(board2);
-
+        StdOut.println(board.hamming());
+        StdOut.println(board.manhattan());
         int index = 1;
         for (Board neighbor : board.neighbors()) {
             StdOut.println("neighbor" + index++);
